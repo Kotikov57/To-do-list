@@ -1,21 +1,24 @@
 COMP = g++
 COMPFLAGS = -Wall -Wextra -Iinclude
 TARGET = main
-SRC_DIR = src
-OBJ_DIR = obj
-SRC = $(wildcard $(SRC_DIR)/*.cpp)
-OBJ = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)%.o, $(SRC))
+LDFLAGS = -lsqlite3
 
-all : $(TARGET)
+all: $(TARGET)
 
-$(TARGET) : $(OBJ)
-	$(COMP) $(COMPFLAGS) -o $@ $(OBJ)
+$(TARGET): database.o server.o task_manager.o main.o
+	$(COMP) $(COMPFLAGS) -o $@ $^
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
-	$(COMP) $(COMPFLAGS) -c $< -o $@
+database.o: src/database.cpp
+	$(COMP) $(COMPFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+server.o: src/server.cpp
+	$(COMP) $(COMPFLAGS) -o $@ $^
+
+task_manager.o: src/task_manager.cpp
+	$(COMP) $(COMPFLAGS) -o $@ $^
+
+main.o: src/main.cpp
+	$(COMP) $(COMPFLAGS) -o $@ $^
 
 clean:
 	rm -rf $(OBJ_DIR) $(TARGET)
