@@ -6,19 +6,19 @@ LDFLAGS = -lsqlite3
 all: $(TARGET)
 
 $(TARGET): database.o server.o task_manager.o main.o
-	$(COMP) $(COMPFLAGS) -o $@ $^
+	$(COMP) $(COMPFLAGS)  -o $@ $^ $(LDFLAGS)
 
 database.o: src/database.cpp
-	$(COMP) $(COMPFLAGS) -o $@ $^ $(LDFLAGS)
+	$(COMP) $(COMPFLAGS) $(LDFLAGS) -c $< -o $@
 
 server.o: src/server.cpp
-	$(COMP) $(COMPFLAGS) -o $@ $^
+	$(COMP) $(COMPFLAGS) -c $< -o $@
 
 task_manager.o: src/task_manager.cpp
-	$(COMP) $(COMPFLAGS) -o $@ $^
+	$(COMP) $(COMPFLAGS) -c $< -o $@
 
 main.o: src/main.cpp
-	$(COMP) $(COMPFLAGS) -o $@ $^
+	$(COMP) $(COMPFLAGS)  -c $< -o $@ 
 
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET)
+	rm -rf *.o $(TARGET)
