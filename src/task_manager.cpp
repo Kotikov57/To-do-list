@@ -1,13 +1,14 @@
 #include "../include/task_manager.h"
 #include "../include/database.h"
 
+
 std::vector<std::string> TaskManager::getAllTasks() {
     return Database::query("SELECT * FROM tasks");
 }
 
 void TaskManager::addTask(const std::string& description, int priority) {
     Database::execute("INSERT INTO tasks (description, priority, status) VALUES (?, ?, ?)",
-                     description, priority, false);
+                    description, priority, 0);
 }
 
 void TaskManager::deleteTask(int id) {

@@ -14,8 +14,8 @@ void Database::init() {
         CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             description TEXT NOT NULL,
-            status BOOLEAN NOT NULL DEFAULT 0,
-            priority INTEGER NOT NULL
+            priority INTEGER NOT NULL,
+            status BOOLEAN
         );
     )";
     char* errorMessage = nullptr;
@@ -27,6 +27,7 @@ void Database::init() {
 }
 
 std::vector<std::string> Database::query(const std::string& query) {
+    
     sqlite3_stmt* stmt;
     std::vector<std::string> results;
     if (sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, 0) != SQLITE_OK) {
