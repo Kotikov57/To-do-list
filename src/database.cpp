@@ -26,18 +26,28 @@ void Database::init() {
     }
 }
 
-std::vector<std::string> Database::query(const std::string& query) {
+std::vector<Task> Database::query(const std::string& query) {
     
     sqlite3_stmt* stmt;
-    std::vector<std::string> results;
+    std::vector<Task> results;
     if (sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, 0) != SQLITE_OK) {
         throw std::runtime_error("Ошибка подготовки SQL запроса");
     }
-    while(sqlite3_step(stmt) == SQLITE_ROW) {
-        std::string taskDescription = reinterpret_cast<const char*>(sqlite3_column_text(stmt,1));
-        results.push_back(taskDescription);
+
+    // Извлечение данных из результатов запроса
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        Task task;
+        task.id = sqlite3_column_int(stmt, 0); // Столбец id
+        task.description = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)); // Столбец description
+        task.priority = sqlite3_column_int(stmt, 2); // Столбец priority
+        task.status = sqlite3_column_int(stmt, 3); // Столбец status (0 или 1)
+
+        results.push_back(task);
     }
+
+    // Завершаем обработку запроса
     sqlite3_finalize(stmt);
+
     return results;
 }
 

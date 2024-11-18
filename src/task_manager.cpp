@@ -2,7 +2,7 @@
 #include "../include/database.h"
 
 
-std::vector<std::string> TaskManager::getAllTasks() {
+std::vector<Task> TaskManager::getAllTasks() {
     return Database::query("SELECT * FROM tasks");
 }
 

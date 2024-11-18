@@ -10,10 +10,13 @@ void Server::initRoutes() {
     Database::init();
 
     CROW_ROUTE(app, "/tasks").methods(crow::HTTPMethod::GET)([](const crow::request&){
-        std::vector<std::string> tasks = TaskManager::getAllTasks();
+        std::vector<Task> tasks = TaskManager::getAllTasks();
         crow::json::wvalue jsonResponse;
         for (size_t i = 0; i < tasks.size(); ++i) {
-            jsonResponse["tasks"][i] = tasks[i];
+            jsonResponse["tasks"][i]["id"] = tasks[i].id;
+            jsonResponse["tasks"][i]["description"] = tasks[i].description;
+            jsonResponse["tasks"][i]["priority"] = tasks[i].priority;
+            jsonResponse["tasks"][i]["status"] = tasks[i].status ? "Completed" : "Pending";
         }
         // Возвращаем JSON-ответ
         return crow::response{jsonResponse};
