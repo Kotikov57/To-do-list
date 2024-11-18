@@ -3,6 +3,9 @@
 
 #include <string>
 #include <vector>
+#include <sqlite3.h>
+
+extern sqlite3* db;
 
 class Database {
 public:
