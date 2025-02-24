@@ -3,8 +3,8 @@ create table tasks
     id          serial,
     name        text,
     status      text,
-    started_at  date,
-    finished_at date
+    started_at  timestamp default CURRENT_TIMESTAMP,
+    finished_at timestamp
 );
 
 alter table tasks

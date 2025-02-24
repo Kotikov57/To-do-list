@@ -4,16 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"time"
-
 	"github.com/segmentio/kafka-go"
 	_ "github.com/lib/pq"
 )
 
-// Task - структура задачи
 type Task struct {
 	ID int `json:"id"`
 	Name string `json:"name"`
@@ -42,6 +39,53 @@ func initDB() {
 	log.Println("Подключено к PostgreSQL")
 }
 
-func updateTaskStatus(taskIdD int, status string) error {
-	query := `UPDATE tasks SET status = $1`
+func updateTaskStatus(taskID int, status string) error {
+	var err error
+	if status == "Completed" {
+		query := `UPDATE tasks SET status = $1, finisged_at = $2 WHERE id = $3`
+		_, err = db.Exec(query,status,time.Now(),taskID)
+	} else{
+		query := `UPDATE tasks SET status = $1 WHERE id = $2`
+		_, err = db.Exec(query,status,taskID)
+	}
+	return err
+}
+
+func consumeMessages() {
+	r := kafka.NewReader(kafka.ReaderConfig{
+		Brokers: []string{kafkaURL},
+		Topic: topic,
+		GroupID: groupID,
+		MaxBytes: 10e6,
+	})
+	log.Println("Consumer запущен, слушает Kafka")
+	for {
+		msg, err := r.ReadMessage(context.Background())
+		if err != nil {
+			log.Println("Ошибка чтения Kafka", err)
+			continue
+		}
+		var task Task
+		if err := json.Unmarshal(msg.Value, &task); err != nil {
+			log.Println("Ошибка парсинга JSON", err)
+			continue
+		}
+		log.Printf("Получена задача $+v\n", task)
+		if err := updateTaskStatus(task.ID, "Processing"); err != nil {
+			log.Println("Ошибка обновления статуса", err)
+			continue
+		}
+		log.Printf("Задача %d обновлена в статус 'Proccessing'\n", task.ID)
+		time.Sleep(5 * time.Second)
+		if err := updateTaskStatus(task.ID, "Completed"); err != nil {
+			log.Println("Ошибка обновления статуса", err)
+			continue
+		}
+		log.Printf("Задача %d завершена", task.ID)
+	}
+}
+
+func main() {
+	initDB()
+	consumeMessages()
 }

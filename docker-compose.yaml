@@ -4,7 +4,8 @@ services:
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
-    ports: "2181:2181"
+    ports: 
+      - "2181:2181"
     healthcheck:
       test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
       interval: 10s
@@ -16,7 +17,8 @@ services:
     depends_on:
       zookeeper:
         condition: service_healthy
-    ports: "9092:9092"
+    ports: 
+      - "9092:9092"
     environment:
         KAFKA_BROKER_ID: ${KAFKA_BROKER_ID}
         KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
@@ -30,11 +32,39 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports: "5432:5432"
+    ports: 
+      - "5432:5432"
     healthcheck:
       test: ["CMD", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
-      db-data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+  
+  migrations:
+    build: ./migrations
+    container_name: migrations
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+  
+  producer:
+    build: ./producer
+    container_name: producer
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+
+  consumer:
+    build: ./consumer
+    container_name: consumer
+    depends_on:
+      producer:
+        condition: service_started
+
+volumes:
+  pgdata:
