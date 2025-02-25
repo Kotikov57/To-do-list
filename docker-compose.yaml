@@ -10,9 +10,11 @@ services:
       test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
       interval: 10s
       retries: 5
+    networks:
+      - mynetwork
   
   kafka:
-    image: bitnami/kafka
+    image: ubuntu/kafka
     container_name: kafka
     depends_on:
       zookeeper:
@@ -24,6 +26,8 @@ services:
         KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
         KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
         KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
+    networks:
+      - mynetwork
 
   db:
     image: postgres
@@ -37,10 +41,12 @@ services:
     healthcheck:
       test: ["CMD", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      retries: 10
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - mynetwork
   
   migrations:
     build: ./migrations
@@ -49,15 +55,21 @@ services:
       db:
         condition: service_healthy
     restart: on-failure
+    networks:
+      - mynetwork
   
   producer:
     build: ./producer
     container_name: producer
+    ports:
+     - "8080:8080"
     depends_on:
       migrations:
         condition: service_completed_successfully
       kafka:
         condition: service_started
+    networks:
+      - mynetwork
 
   consumer:
     build: ./consumer
@@ -65,6 +77,12 @@ services:
     depends_on:
       producer:
         condition: service_started
+    networks:
+      - mynetwork
 
 volumes:
   pgdata:
+
+networks:
+  mynetwork:
+    driver: bridge

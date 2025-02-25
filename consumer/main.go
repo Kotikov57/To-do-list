@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
-	"os"
+//	"os"
 	"time"
 	"github.com/segmentio/kafka-go"
 	_ "github.com/lib/pq"
@@ -27,7 +27,7 @@ var (
 )
 
 func initDB() {
-	dsn := os.Getenv("DATABASE_URL")
+	dsn := "postgres://postgres:fkla5283@db:5432/list?sslmode=disable"
 	var err error
 	db, err = sql.Open("postgres", dsn)
 	if err != nil {
@@ -42,7 +42,7 @@ func initDB() {
 func updateTaskStatus(taskID int, status string) error {
 	var err error
 	if status == "Completed" {
-		query := `UPDATE tasks SET status = $1, finisged_at = $2 WHERE id = $3`
+		query := `UPDATE tasks SET status = $1, finished_at = $2 WHERE id = $3`
 		_, err = db.Exec(query,status,time.Now(),taskID)
 	} else{
 		query := `UPDATE tasks SET status = $1 WHERE id = $2`
@@ -70,7 +70,7 @@ func consumeMessages() {
 			log.Println("Ошибка парсинга JSON", err)
 			continue
 		}
-		log.Printf("Получена задача $+v\n", task)
+		log.Printf("Получена задача %v\n", task)
 		if err := updateTaskStatus(task.ID, "Processing"); err != nil {
 			log.Println("Ошибка обновления статуса", err)
 			continue

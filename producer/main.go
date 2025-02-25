@@ -27,7 +27,8 @@ var (
 )
 
 func initDB() {
-	dsn := os.Getenv("DATABASE_URL")
+	dsn := "postgres://postgres:fkla5283@db:5432/list?sslmode=disable"
+
 	var err error
 	db, err = sql.Open("postgres", dsn)
 	if err != nil {
@@ -41,7 +42,7 @@ func initDB() {
 
 func sendToKafka(task Task) error {
 	w := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{kafkaURL},
+		Brokers: []string{"kafka:9092"},
 		Topic: topic,
 		Balancer: &kafka.LeastBytes{},
 	})
@@ -58,7 +59,7 @@ func createTask(c *gin.Context) {
 		return
 	}
 
-	query := `INSERT INTO tasks (name, status) VALUES ($1,$2) RETURNING id, created_at`
+	query := `INSERT INTO tasks (name, status) VALUES ($1,$2) RETURNING id, started_at`
 	err := db.QueryRow(query, task.Name, "Pending").Scan(&task.ID, &task.CreatedAt)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error":"Ошибка сохранения новой задачи"})
@@ -71,10 +72,38 @@ func createTask(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message":"Задача создана","task":task})
 }
 
+func getTask(c *gin.Context) {
+	query := `SELECT id, name, status, started_at, finished_at FROM tasks`
+	rows, err := db.Query(query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении базы данных"})
+		return
+	}
+	defer rows.Close()
+	var data []Task
+	for rows.Next() {
+		var task Task
+		err := rows.Scan(&task.ID, &task.Name, &task.Status, &task.CreatedAt, &task.FinishedAt)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при чтении данных"})
+			log.Println("Ошибка при чтении данных", err)
+			return
+		}
+		data = append(data, task)
+	}
+	if err = rows.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при обработке строк"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": data})
+}
+
 func main() {
 	initDB()
 	r:=gin.Default()
 	r.POST("/task", createTask)
+	r.GET("/task", getTask)
 	log.Println("Producer запущен на порту 8080")
 	r.Run(":8080")
 }
